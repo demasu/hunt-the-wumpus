@@ -1,7 +1,8 @@
-#include <iostream> // std::cout
-#include <string>   // std::string
-#include <vector>   // std::vector
-#include <cctype>   // std::tolower
+#include <iostream>     // std::cout
+#include <string>       // std::string
+#include <vector>       // std::vector
+#include <cctype>       // std::tolower
+#include <algorithm>    // std::transform
 
 // Function definitions
 std::string get_input();

@@ -130,3 +130,7 @@ inc/
 *.tidy
 *.bak
 *.dSYM
+
+# Compiled files for this project
+test
+wumpus

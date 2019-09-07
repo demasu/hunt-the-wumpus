@@ -1,7 +1,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <random>
 #include "room.h"
+
+// Function prototypes
+Room init_room(bool, bool, bool);
 
 void Room::set_rooms( Room room1, Room room2, Room room3 ) {
     connected_rooms.push_back( room1 );
@@ -62,11 +66,50 @@ int main() {
     room.set_pit(0);
     room.set_wumpus(0);
 
-    Room room1, room2, room3;
-    room1.set_bat(1);
-    room2.set_pit(1);
-    room3.set_wumpus(1);
+    std::random_device rd; // Obtain a random number from hardware
+    std::mt19937 eng(rd()); // Seed the generator
+    std::uniform_int_distribution<> dist(1, 20); // Define the range
+    int room_with_wumpus = dist(eng);
+    std::cerr << "Wumpus is in room: [" << room_with_wumpus << "]" << std::endl;
 
+    std::vector<Room> rooms;
+    for ( int i = 1; i < 4; i++ ) {
+        std::uniform_int_distribution<> distr(0, 3);
+        int hazard = distr(eng);
+
+        if ( hazard == 3 && i != room_with_wumpus ) {
+            // Don't put the wumpus in more than one room
+            i--;
+            continue;
+        }
+
+        Room room;        
+        switch (hazard) {
+            case 0:
+                room = init_room(0, 0, 0);
+                break;
+            case 1:
+                room = init_room(1, 0, 0);
+                break;
+            case 2:
+                room = init_room(0, 1, 0);
+                break;
+            case 3:
+                room = init_room(0, 0, 1);
+                break;
+            default:
+                break;
+        }
+        rooms.push_back(room);
+    }
+
+    Room room1, room2, room3;
+    room3 = rooms.back();
+    rooms.pop_back();
+    room2 = rooms.back();
+    rooms.pop_back();
+    room1 = rooms.back();
+    rooms.pop_back();
     room.set_rooms( room1, room2, room3 );
 
     room.set_warnings( room.get_rooms() );
@@ -78,4 +121,13 @@ int main() {
     }
 
     return 0;
+}
+
+Room init_room( bool bat, bool pit, bool wumpus ) {
+    Room room;
+    room.set_bat(bat);
+    room.set_pit(pit);
+    room.set_wumpus(wumpus);
+
+    return room;
 }

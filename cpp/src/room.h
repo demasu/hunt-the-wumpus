@@ -8,17 +8,22 @@ class Room {
         bool wumpus;
         bool bat;
         bool pit;
+        int room_number;
+        bool warning_present;
     public:
         void set_rooms( Room room1, Room room2, Room room3 );
         void set_warnings( std::vector<Room> rooms );
         void set_wumpus( bool );
         void set_bat( bool );
         void set_pit( bool );
+        void set_number( int );
         std::vector<Room> get_rooms();
         std::vector<std::string> get_warnings();
         bool get_wumpus();
         bool get_bat();
         bool get_pit();
+        int get_number();
+        bool is_hazardous();
 };
 
 #endif

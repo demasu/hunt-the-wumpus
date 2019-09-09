@@ -11,10 +11,11 @@
 // Function definitions
 std::string get_input();
 std::vector<std::string> split_input( std::string );
-void init_map( std::vector<Room> &map);
+void init_map( std::vector<Room> &map, int starting_room );
 Room init_room(bool, bool, bool);
 void connect_rooms( std::vector<Room> &map );
 void generate_warnings( std::vector<Room> &map );
+int activate_bat_trap();
 
 void Room::set_rooms( Room room1, Room room2, Room room3 ) {
     connected_rooms.push_back( room1 );
@@ -85,18 +86,36 @@ bool Room::is_hazardous() {
 }
 
 int main() {
-    // Setup the map and rooms
-    std::vector<Room> map;
-    init_map( map );
-
     int starting_room;
     std::random_device rd; // Obtain a random number from hardware
     std::mt19937 eng(rd()); // Seed the generator
     std::uniform_int_distribution<> dist(1, 20); // Define the range
     starting_room    = dist(eng);
 
+    // Setup the map and rooms
+    std::vector<Room> map;
+    init_map( map, starting_room );
+
     int current_room = starting_room;
     while (1) {
+        if ( map.at(current_room).is_hazardous() ) {
+            if ( map.at(current_room).get_wumpus() ) {
+                // Kill the player
+                std::cout << "You have been eaten by a wumpus!" << std::endl;
+                std::cout << "You are dead!" << std::endl;
+                break;
+            }
+            if ( map.at(current_room).get_bat() ) {
+                // Carry the player away
+                current_room = activate_bat_trap();
+            }
+            if ( map.at(current_room).get_pit() ) {
+                // Kill the player
+                std::cout << "You fell down a pit!" << std::endl;
+                std::cout << "You are dead!" << std::endl;
+                break;
+            }
+        }
         std::cout << "You are in room " << current_room << std::endl;
         std::cout << "Tunnels lead to " << map.at(current_room).get_rooms().at(0).get_number() << "," << map.at(current_room).get_rooms().at(1).get_number() << "," << map.at(current_room).get_rooms().at(2).get_number() << "." << std::endl;
         if ( map.at(current_room).is_hazardous() ) {
@@ -147,7 +166,19 @@ int main() {
             continue;
         }
         else if ( !command.compare("quit") || !command.compare("exit") ) {
-            break;
+            std::cout << "Are you sure? ";
+            input = get_input();
+            words = split_input( input );
+            command = words[0];
+            std::transform(command.begin(), command.end(), command.begin(), [](unsigned char c){ return std::tolower(c); }); // Converts to lowercase
+
+            if ( command.substr(0) == "y" ) {
+                std::cout << "Goodbye" << std::endl;
+
+                break;
+            }
+
+            continue;
         }
         else {
             std::cout << "I don't understand" << std::endl;
@@ -156,15 +187,12 @@ int main() {
 
     }
 
-    std::cout << "Goodbye" << std::endl;
-
     return 0;
 }
 
 std::string get_input() {
     std::string input;
     getline(std::cin, input);
-    std::cout << "The command you entered was: [" << input << "]" << std::endl;
 
     return input;
 }
@@ -184,15 +212,10 @@ std::vector<std::string> split_input( std::string input ) {
         words.push_back(input); // Gets the last word typed in
     }
 
-    for (std::vector<std::string>::iterator it = words.begin(); it != words.end(); ++it) {
-        std::cout << "Word is: [" << *it;
-        std::cout << "]" << std::endl;
-    }
-
     return words;
 }
 
-void init_map( std::vector<Room> &map ) {
+void init_map( std::vector<Room> &map, int starting_room ) {
     // Map consists of 20 rooms
     // Each room has 3 connecting rooms
     // Starting room will vary
@@ -202,6 +225,10 @@ void init_map( std::vector<Room> &map ) {
     std::mt19937 eng(rd()); // Seed the generator
     std::uniform_int_distribution<> dist(1, 20); // Define the range
     room_with_wumpus = dist(eng);
+    if ( starting_room == room_with_wumpus ) {
+        room_with_wumpus = dist(eng);
+    }
+    std::cerr << "Room with the wumpus is: " << room_with_wumpus << std::endl;
 
     Room *fake = new Room;
     map.push_back(*fake);
@@ -215,6 +242,9 @@ void init_map( std::vector<Room> &map ) {
             *room = init_room(0, 0, 1);
         }
         else {
+            if ( starting_room == i ) {
+                hazard = 0;
+            }
             switch (hazard) {
                 case 0:
                     *room = init_room(0, 0, 0);
@@ -320,4 +350,15 @@ void generate_warnings( std::vector<Room> &map ) {
     for ( int i = 1; i <= 20; i++ ) {
         map.at(i).set_warnings( map.at(i).get_rooms() );
     }
+}
+
+int activate_bat_trap() {
+
+    std::cout << "Bats carried you away!" << std::endl;
+
+    std::random_device rd; // Obtain a random number from hardware
+    std::mt19937 eng(rd()); // Seed the generator
+    std::uniform_int_distribution<> dist(1, 20); // Define the range
+
+    return dist(eng);
 }

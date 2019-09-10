@@ -16,6 +16,11 @@ Room init_room(bool, bool, bool);
 void connect_rooms( std::vector<Room> &map );
 void generate_warnings( std::vector<Room> &map );
 int activate_bat_trap();
+bool check_hazard( std::vector<Room> &map, int current_room );
+bool handle_hazard( std::vector<Room> &map, int &current_room );
+std::string parse_input( std::string input );
+
+// Class function definitions
 
 void Room::set_rooms( Room room1, Room room2, Room room3 ) {
     connected_rooms.push_back( room1 );
@@ -85,6 +90,8 @@ bool Room::is_hazardous() {
     return warning_present;
 }
 
+// Main code
+
 int main() {
     int starting_room;
     std::random_device rd; // Obtain a random number from hardware
@@ -96,26 +103,38 @@ int main() {
     std::vector<Room> map;
     init_map( map, starting_room );
 
+    bool player_dead = false;
     int current_room = starting_room;
     while (1) {
-        if ( map.at(current_room).is_hazardous() ) {
-            if ( map.at(current_room).get_wumpus() ) {
-                // Kill the player
-                std::cout << "You have been eaten by a wumpus!" << std::endl;
-                std::cout << "You are dead!" << std::endl;
-                break;
-            }
-            if ( map.at(current_room).get_bat() ) {
-                // Carry the player away
-                current_room = activate_bat_trap();
-            }
-            if ( map.at(current_room).get_pit() ) {
-                // Kill the player
-                std::cout << "You fell down a pit!" << std::endl;
-                std::cout << "You are dead!" << std::endl;
+        // Handle game reset logic
+
+        if ( player_dead ) {
+            // Print message
+            // Restart if needed
+        }
+
+
+        // Check for hazards
+        // Do stuff if hazards
+        // Display room information
+        // Get user input
+        // Act on user input
+
+        bool has_hazard = check_hazard( map, current_room );
+        if ( has_hazard ) {
+            bool player_died = handle_hazard( map, current_room );
+            if ( player_died ) {
+                player_dead = true;
                 break;
             }
         }
+
+        // Display room info
+        //describe_room(current_room);
+
+        // Get user input
+
+
         std::cout << "You are in room " << current_room << std::endl;
         std::cout << "Tunnels lead to " << map.at(current_room).get_rooms().at(0).get_number() << "," << map.at(current_room).get_rooms().at(1).get_number() << "," << map.at(current_room).get_rooms().at(2).get_number() << "." << std::endl;
         if ( map.at(current_room).is_hazardous() ) {
@@ -126,10 +145,7 @@ int main() {
             }
         }
         std::cout << "Move or shoot? ";
-        std::string input = get_input();
-        std::vector<std::string> words = split_input( input );
-        std::string command = words[0];
-        std::transform(command.begin(), command.end(), command.begin(), [](unsigned char c){ return std::tolower(c); }); // Converts to lowercase
+        std::string command = parse_input( get_input() );
 
         if ( !command.compare("move") ) {
             std::cout << "\tTo which room? ";
@@ -167,10 +183,7 @@ int main() {
         }
         else if ( !command.compare("quit") || !command.compare("exit") ) {
             std::cout << "Are you sure? ";
-            input = get_input();
-            words = split_input( input );
-            command = words[0];
-            std::transform(command.begin(), command.end(), command.begin(), [](unsigned char c){ return std::tolower(c); }); // Converts to lowercase
+            command = parse_input( get_input() );
 
             if ( command.substr(0) == "y" ) {
                 std::cout << "Goodbye" << std::endl;
@@ -195,6 +208,14 @@ std::string get_input() {
     getline(std::cin, input);
 
     return input;
+}
+
+std::string parse_input( std::string input ) {
+    std::vector<std::string> words = split_input( input );
+    std::string command = words[0];
+    std::transform(command.begin(), command.end(), command.begin(), [](unsigned char c){ return std::tolower(c); }); // Converts to lowercase
+
+    return command;
 }
 
 std::vector<std::string> split_input( std::string input ) {
@@ -361,4 +382,32 @@ int activate_bat_trap() {
     std::uniform_int_distribution<> dist(1, 20); // Define the range
 
     return dist(eng);
+}
+
+bool check_hazard( std::vector<Room> &map, int current_room ) {
+    return map.at(current_room).is_hazardous();
+}
+
+bool handle_hazard( std::vector<Room> &map, int &current_room ) {
+    // Returns true or false for whether the player died or not
+
+    if ( map.at(current_room).get_wumpus() ) {
+        // Kill the player
+        std::cout << "You have been eaten by a wumpus!" << std::endl;
+        std::cout << "You are dead!" << std::endl;
+        return true;
+    }
+    if ( map.at(current_room).get_bat() ) {
+        // Carry the player away
+        current_room = activate_bat_trap();
+        return false;
+    }
+    if ( map.at(current_room).get_pit() ) {
+        // Kill the player
+        std::cout << "You fell down a pit!" << std::endl;
+        std::cout << "You are dead!" << std::endl;
+        return true;
+    }
+
+    return false; // Default
 }

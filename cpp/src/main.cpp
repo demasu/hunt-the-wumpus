@@ -11,7 +11,7 @@
 // Function definitions
 std::string get_input();
 std::vector<std::string> split_input( std::string );
-void init_map( std::vector<Room> &map, int starting_room );
+void init_map( std::vector<Room> &map, int &starting_room, int &current_room );
 Room init_room(bool, bool, bool);
 void connect_rooms( std::vector<Room> &map );
 void generate_warnings( std::vector<Room> &map );
@@ -19,185 +19,46 @@ int activate_bat_trap();
 bool check_hazard( std::vector<Room> &map, int current_room );
 bool handle_hazard( std::vector<Room> &map, int &current_room );
 std::string parse_input( std::string input );
-
-// Class function definitions
-
-void Room::set_rooms( Room room1, Room room2, Room room3 ) {
-    connected_rooms.push_back( room1 );
-    connected_rooms.push_back( room2 );
-    connected_rooms.push_back( room3 );
-}
-
-void Room::set_warnings( std::vector<Room> rooms ) {
-    for ( std::vector<Room>::iterator it = rooms.begin(); it != rooms.end(); ++it ) {
-        Room current_room = *it;
-        if ( current_room.get_wumpus() ) {
-            warnings.push_back("You smell a wumpus.");
-            warning_present = 1;
-        }
-        if ( current_room.get_bat() ) {
-            warnings.push_back("You hear flapping.");
-            warning_present = 1;
-        }
-        if ( current_room.get_pit() ) {
-            warnings.push_back("You feel a breeze.");
-            warning_present = 1;
-        }
-    }
-}
-
-void Room::set_wumpus( bool is_here ) {
-    wumpus = is_here;
-}
-
-void Room::set_bat( bool is_here ) {
-    bat = is_here;
-}
-
-void Room::set_pit( bool is_here ) {
-    pit = is_here;
-}
-
-void Room::set_number( int number ) {
-    room_number = number;
-}
-
-std::vector<Room> Room::get_rooms() {
-    return connected_rooms;
-}
-
-std::vector<std::string> Room::get_warnings() {
-    return warnings;
-}
-
-bool Room::get_wumpus() {
-    return wumpus;
-}
-
-bool Room::get_bat() {
-    return bat;
-}
-
-bool Room::get_pit() {
-    return pit;
-}
-
-int Room::get_number() {
-    return room_number;
-}
-
-bool Room::is_hazardous() {
-    return warning_present;
-}
+void describe_room( std::vector<Room> &map, int current_room );
+void get_command( std::vector<Room> &map, int &current_room, bool &run_game );
+bool handle_player_death( int &current_room, int starting_room, bool &player_dead, bool &generate_map, bool &run_game );
 
 // Main code
 
 int main() {
-    int starting_room;
-    std::random_device rd; // Obtain a random number from hardware
-    std::mt19937 eng(rd()); // Seed the generator
-    std::uniform_int_distribution<> dist(1, 20); // Define the range
-    starting_room    = dist(eng);
-
-    // Setup the map and rooms
-    std::vector<Room> map;
-    init_map( map, starting_room );
-
+    bool generate_map  = true;
     bool player_dead = false;
-    int current_room = starting_room;
-    while (1) {
-        // Handle game reset logic
+    bool run_game    = true;
+    int current_room;
+    int starting_room = 1;
+    std::vector<Room> map;
+
+    while (run_game) {
+        if ( generate_map ) {
+            map.clear();
+            init_map( map, starting_room, current_room );
+            generate_map = false;
+        }
 
         if ( player_dead ) {
-            // Print message
-            // Restart if needed
-        }
-
-
-        // Check for hazards
-        // Do stuff if hazards
-        // Display room information
-        // Get user input
-        // Act on user input
-
-        bool has_hazard = check_hazard( map, current_room );
-        if ( has_hazard ) {
-            bool player_died = handle_hazard( map, current_room );
-            if ( player_died ) {
-                player_dead = true;
-                break;
-            }
-        }
-
-        // Display room info
-        //describe_room(current_room);
-
-        // Get user input
-
-
-        std::cout << "You are in room " << current_room << std::endl;
-        std::cout << "Tunnels lead to " << map.at(current_room).get_rooms().at(0).get_number() << "," << map.at(current_room).get_rooms().at(1).get_number() << "," << map.at(current_room).get_rooms().at(2).get_number() << "." << std::endl;
-        if ( map.at(current_room).is_hazardous() ) {
-            std::vector<std::string> warnings = map.at(current_room).get_warnings();
-            for ( std::vector<std::string>::iterator it = warnings.begin(); it != warnings.end(); ++it ) {
-                std::cout << "\t" << *it;
-                std::cout << std::endl;
-            }
-        }
-        std::cout << "Move or shoot? ";
-        std::string command = parse_input( get_input() );
-
-        if ( !command.compare("move") ) {
-            std::cout << "\tTo which room? ";
-            std::string room_to_move_to;
-            int move_room;
-
-            try {
-                room_to_move_to = get_input();
-                //move_room = 0;
-                std::stringstream mroom(room_to_move_to);
-                mroom >> move_room;
-                if ( move_room == map.at(current_room).get_rooms().at(0).get_number() ) {
-                    current_room = move_room;
-                }
-                else if ( move_room == map.at(current_room).get_rooms().at(1).get_number() ) {
-                    current_room = move_room;
-                }
-                else if ( move_room == map.at(current_room).get_rooms().at(2).get_number() ) {
-                    current_room = move_room;
-                }
-                else {
-                    throw "Wrong room";
-                }
-            }
-            catch (...) {
-                std::cout << "That room isn't connected to the one you're in." << std::endl;
+            if ( handle_player_death( current_room, starting_room, player_dead, generate_map, run_game ) ) {
                 continue;
             }
-
-            continue;
-        }
-        else if ( !command.compare("shoot") ) {
-            std::cout << "You shoot" << std::endl;
-            continue;
-        }
-        else if ( !command.compare("quit") || !command.compare("exit") ) {
-            std::cout << "Are you sure? ";
-            command = parse_input( get_input() );
-
-            if ( command.substr(0) == "y" ) {
-                std::cout << "Goodbye" << std::endl;
-
+            else {
                 break;
             }
-
-            continue;
-        }
-        else {
-            std::cout << "I don't understand" << std::endl;
-            continue;
         }
 
+        if ( check_hazard( map, current_room ) ) {
+            if ( handle_hazard( map, current_room ) ) {
+                player_dead = true;
+
+                continue; // Make sure the user can restart
+            }
+        }
+
+        describe_room( map, current_room );
+        get_command( map, current_room, run_game );
     }
 
     return 0;
@@ -236,7 +97,7 @@ std::vector<std::string> split_input( std::string input ) {
     return words;
 }
 
-void init_map( std::vector<Room> &map, int starting_room ) {
+void init_map( std::vector<Room> &map, int &starting_room, int &current_room ) {
     // Map consists of 20 rooms
     // Each room has 3 connecting rooms
     // Starting room will vary
@@ -245,11 +106,13 @@ void init_map( std::vector<Room> &map, int starting_room ) {
     std::random_device rd; // Obtain a random number from hardware
     std::mt19937 eng(rd()); // Seed the generator
     std::uniform_int_distribution<> dist(1, 20); // Define the range
+    starting_room    = dist(eng);
     room_with_wumpus = dist(eng);
+    current_room     = starting_room;
+
     if ( starting_room == room_with_wumpus ) {
         room_with_wumpus = dist(eng);
     }
-    std::cerr << "Room with the wumpus is: " << room_with_wumpus << std::endl;
 
     Room *fake = new Room;
     map.push_back(*fake);
@@ -257,7 +120,7 @@ void init_map( std::vector<Room> &map, int starting_room ) {
         std::uniform_int_distribution<> distr(0, 2);
         int hazard = distr(eng);
 
-        Room *room = new Room;        
+        Room *room = new Room;
         if ( i == room_with_wumpus ) {
             // Don't put the wumpus in more than one room
             *room = init_room(0, 0, 1);
@@ -360,7 +223,7 @@ void connect_rooms( std::vector<Room> &map ) {
             case 20:
                 map.at(i).set_rooms( map.at(10), map.at(18), map.at(19) );
                 break;
-            
+
             default:
                 break;
         }
@@ -410,4 +273,92 @@ bool handle_hazard( std::vector<Room> &map, int &current_room ) {
     }
 
     return false; // Default
+}
+
+void describe_room( std::vector<Room> &map, int current_room ) {
+    std::cout << "You are in room " << current_room << std::endl;
+    std::cout << "Tunnels lead to " << map.at(current_room).get_rooms().at(0).get_number() << "," << map.at(current_room).get_rooms().at(1).get_number() << "," << map.at(current_room).get_rooms().at(2).get_number() << "." << std::endl;
+    if ( map.at(current_room).is_hazardous() ) {
+        std::vector<std::string> warnings = map.at(current_room).get_warnings();
+        for ( std::vector<std::string>::iterator it = warnings.begin(); it != warnings.end(); ++it ) {
+            std::cout << "\t" << *it;
+            std::cout << std::endl;
+        }
+    }
+}
+
+void get_command( std::vector<Room> &map, int &current_room, bool &run_game ) {
+
+    std::cout << "Move or shoot? ";
+    std::string command = parse_input( get_input() );
+
+    if ( !command.compare("move") ) {
+        std::cout << "\tTo which room? ";
+        std::string room_to_move_to;
+        int move_room;
+
+        try {
+            room_to_move_to = get_input();
+            //move_room = 0;
+            std::stringstream mroom(room_to_move_to);
+            mroom >> move_room;
+            if ( move_room == map.at(current_room).get_rooms().at(0).get_number() ) {
+                current_room = move_room;
+            }
+            else if ( move_room == map.at(current_room).get_rooms().at(1).get_number() ) {
+                current_room = move_room;
+            }
+            else if ( move_room == map.at(current_room).get_rooms().at(2).get_number() ) {
+                current_room = move_room;
+            }
+            else {
+                throw "Wrong room";
+            }
+        }
+        catch (...) {
+            std::cout << "That room isn't connected to the one you're in." << std::endl;
+        }
+    }
+    else if ( !command.compare("shoot") ) {
+        std::cout << "You shoot" << std::endl;
+    }
+    else if ( !command.compare("quit") || !command.compare("exit") ) {
+        std::cout << "Are you sure? ";
+        command = parse_input( get_input() );
+
+        if ( command.substr(0) == "y" ) {
+            std::cout << "Goodbye" << std::endl;
+            run_game = false;
+        }
+    }
+    else {
+        std::cout << "I don't understand" << std::endl;
+    }
+}
+
+bool handle_player_death( int &current_room, int starting_room, bool &player_dead, bool &generate_map, bool &run_game ) {
+    std::cout << "Would you like to play again? ";
+    std::string restart = parse_input( get_input() );
+    if ( restart.substr(0) == "y" ) {
+        std::cout << "Would you like to use the same map? ";
+        std::string keep_map = parse_input( get_input() );
+        if ( keep_map.substr(0) == "y" ) {
+            current_room = starting_room;
+            player_dead = false;
+
+            return true;
+        }
+        else {
+            generate_map = true;
+            player_dead = false;
+
+            return true;
+        }
+    }
+    else {
+        std::cout << "Goodbye!" << std::endl;
+        run_game = false;
+
+        return false;
+    }
 }

@@ -10,6 +10,7 @@ class Room {
         bool pit;
         int room_number;
         bool warning_present;
+        int connected_room_numbers[3];
     public:
         void set_rooms( Room room1, Room room2, Room room3 );
         void set_warnings( std::vector<Room> rooms );
@@ -17,6 +18,7 @@ class Room {
         void set_bat( bool );
         void set_pit( bool );
         void set_number( int );
+        void set_connected_numbers();
         std::vector<Room> get_rooms();
         std::vector<std::string> get_warnings();
         bool get_wumpus();
@@ -24,6 +26,7 @@ class Room {
         bool get_pit();
         int get_number();
         bool is_hazardous();
+        int* get_room_numbers();
 };
 
 #endif

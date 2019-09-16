@@ -44,6 +44,12 @@ void Room::set_number( int number ) {
     room_number = number;
 }
 
+void Room::set_connected_numbers() {
+    connected_room_numbers[0] = connected_rooms.at(0).get_number();
+    connected_room_numbers[1] = connected_rooms.at(1).get_number();
+    connected_room_numbers[2] = connected_rooms.at(2).get_number();
+}
+
 std::vector<Room> Room::get_rooms() {
     return connected_rooms;
 }
@@ -70,4 +76,8 @@ int Room::get_number() {
 
 bool Room::is_hazardous() {
     return warning_present;
+}
+
+int* Room::get_room_numbers() {
+    return connected_room_numbers;
 }
